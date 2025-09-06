@@ -54,7 +54,7 @@ namespace WebUtils
 
         public string Render(bool aspAppendVersion=false)
         {
-            if (HasJs != true || ScriptPath != "")
+            if (HasJs != true || ScriptPath =="")
             {
                 return "";
             }
@@ -62,9 +62,9 @@ namespace WebUtils
             var appendStr = "asp-append-version=\"true\"";
             return $$$"""<script src="{{{ScriptPath}}}" {{{(aspAppendVersion ? appendStr : "")}}}></script>""";
         }
-        public string RenderModule(bool isViteSrc=false,bool aspAppendVersion = false)
+        public string RenderMosdule(bool isViteSrc=false,bool aspAppendVersion = false)
         {
-            if (HasJs != true ||ScriptPath != "")
+            if (HasJs != true ||ScriptPath == "")
             {
                 return "";
             }
