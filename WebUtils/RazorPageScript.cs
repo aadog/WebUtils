@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Hosting;
 using System;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace WebUtils
 {
@@ -10,22 +11,51 @@ namespace WebUtils
     {
         public bool HasJs { get; set; } = false;
         public string ScriptPath { get; set; } = "";
-
-        public RazorPageScript(ViewContext viewContext, IWebHostEnvironment environment, IMemoryCache cache,string viewPath = "/Pages", string scriptExt = ".js") 
+        private ViewContext _viewContext;
+        private IWebHostEnvironment _environment;
+        private IMemoryCache _cache;
+        private string _scriptExt=".js";
+        private string _viewPath = "~/Pages";
+        private string _areaViewPath = "/Pages";
+        public RazorPageScript(ViewContext viewContext, IWebHostEnvironment environment, IMemoryCache cache) 
         {
-            var area = viewContext.RouteData.Values["area"]?.ToString();
-            var page = viewContext.RouteData.Values["page"]?.ToString();
+           _viewContext = viewContext;
+           _environment = environment;
+           _cache = cache;
+        }
+
+        public RazorPageScript SetScriptExt(string ext)
+        {
+            _scriptExt = ext;
+            return this;
+        }
+
+        public RazorPageScript SetViewPath(string path)
+        {
+            _viewPath = path;
+            return this;
+        }
+
+        public RazorPageScript SetAreaViewPath(string path)
+        {
+            _areaViewPath = path;
+            return this;
+        }
+        public bool Check()
+        { 
+            var area = _viewContext.RouteData.Values["area"]?.ToString();
+            var page = _viewContext.RouteData.Values["page"]?.ToString();
             string? jsRelativePath = null;
             if (!string.IsNullOrEmpty(page))
             {
                 // 组合路径
                 if (!string.IsNullOrEmpty(area))
                 {
-                    jsRelativePath = $"/Areas/{area}/Pages{page}.cshtml{scriptExt}";
+                    jsRelativePath = $"/Areas/{area}{_areaViewPath}{page}.cshtml{_scriptExt}";
                 }
                 else
                 {
-                    jsRelativePath = $"{viewPath}{page}.cshtml{scriptExt}";
+                    jsRelativePath = $"{_viewPath}{page}.cshtml{_scriptExt}";
                 }
             }
 
@@ -33,44 +63,30 @@ namespace WebUtils
             bool jsExists = false;
             if (!string.IsNullOrEmpty(jsRelativePath))
             {
-                var physicalBasePath = environment.IsDevelopment() ? environment.ContentRootPath : environment.WebRootPath;
+                var physicalBasePath = _environment.IsDevelopment() ? _environment.ContentRootPath : _environment.WebRootPath;
 
-                var physicalPath = System.IO.Path.Combine(
+                var physicalPath = Path.Combine(
                     physicalBasePath,
-                    jsRelativePath.TrimStart('/').Replace('/', System.IO.Path.DirectorySeparatorChar)
+                    jsRelativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)
                 );
 
                 var cacheKey = "js_exists_" + physicalPath;
-                jsExists = cache.GetOrCreate(cacheKey, entry =>
+                jsExists = _cache.GetOrCreate(cacheKey, entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
-                    return System.IO.File.Exists(physicalPath);
+                    return File.Exists(physicalPath);
                 });
             }
 
             HasJs = jsExists;
             ScriptPath = jsRelativePath;
+            return HasJs == true && ScriptPath != "";
         }
 
-        public string Render(bool aspAppendVersion=false)
+        public static RazorPageScript Create(ViewContext viewContext, IWebHostEnvironment environment, IMemoryCache cache)
         {
-            if (HasJs != true || ScriptPath =="")
-            {
-                return "";
-            }
-
-            var appendStr = "asp-append-version=\"true\"";
-            return $$$"""<script src="{{{ScriptPath}}}" {{{(aspAppendVersion ? appendStr : "")}}}></script>""";
-        }
-        public string RenderMosdule(bool isViteSrc=false,bool aspAppendVersion = false)
-        {
-            if (HasJs != true ||ScriptPath == "")
-            {
-                return "";
-            }
-            var appendStr = aspAppendVersion?"asp-append-version=\"true\"":"";
-            var viteSrc = isViteSrc ? "vite-src" : "src";
-            return $$$"""<script type="module"  {{{viteSrc}}}="{{{ScriptPath}}}" {{{appendStr}}}></script>""";
+            var p = new RazorPageScript(viewContext, environment, cache);
+            return p;
         }
     }
 }
