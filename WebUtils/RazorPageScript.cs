@@ -11,11 +11,13 @@ namespace WebUtils
     {
         public bool HasJs { get; set; } = false;
         public string ScriptPath { get; set; } = "";
+
+        public string WebScriptPath { get; set; } = "";
         private ViewContext _viewContext;
         private IWebHostEnvironment _environment;
         private IMemoryCache _cache;
         private string _scriptExt=".js";
-        private string _viewPath = "~/Pages";
+        private string _viewPath = "/Pages";
         private string _areaViewPath = "/Pages";
         public RazorPageScript(ViewContext viewContext, IWebHostEnvironment environment, IMemoryCache cache) 
         {
@@ -80,6 +82,7 @@ namespace WebUtils
 
             HasJs = jsExists;
             ScriptPath = jsRelativePath;
+            WebScriptPath = $"~{ScriptPath}";
             return HasJs == true && ScriptPath != "";
         }
 
