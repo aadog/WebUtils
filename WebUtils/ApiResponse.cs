@@ -1,3 +1,5 @@
+using Htmx;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
@@ -13,18 +15,27 @@ namespace WebUtils
     {
         public static ApiResponse<object> Create()
         {
-            return new ApiResponse<object>();
+            return new ApiResponse<object>() {
+            };
         }
     }
 
     public class ApiResponse<T>
     {
+        public string ApiErrorTrigger { get; set; } = "apiError";
         public bool Success { get; set; } = true;  // 默认成功
         public T? Data { get; set; }
         public ApiError? Error { get; set; }
 
-        public JsonResult ToJsonResult(int statusCode = 200)
+        public JsonResult ToJsonResult(HttpContext? Context=null,int statusCode = 200)
         {
+            if (Context!=null) {
+                if (Context.Request.IsHtmx()) {
+                    if (this.Success == false) {
+                        Context.Response.Htmx(h => h.WithTrigger(ApiErrorTrigger, this));
+                    }
+                }
+            }
             return new JsonResult(this) { StatusCode = statusCode };
         }
         public ApiResponse<T> Ok(T data)
