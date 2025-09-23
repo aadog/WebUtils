@@ -13,27 +13,27 @@ namespace WebUtils
 
     public class ObjectApiResponse
     {
-        public static ApiResponse<object> Create()
+        public static ApiResponse<object> Create(HttpContext httpContext)
         {
-            return new ApiResponse<object>() {
+            return new ApiResponse<object>(httpContext) {
             };
         }
     }
 
-    public class ApiResponse<T>
+    public class ApiResponse<T>(HttpContext _httpContext)
     {
         public string ApiErrorTrigger { get; set; } = "apiError";
         public bool Success { get; set; } = true;  // 默认成功
         public T? Data { get; set; }
         public ApiError? Error { get; set; }
 
-        public JsonResult ToJsonResult(HttpContext? Context=null,int statusCode = 200)
+        public JsonResult ToJsonResult(int statusCode = 200)
         {
-            if (Context!=null) {
-                if (Context.Request.IsHtmx()) {
-                    if (this.Success == false) {
-                        Context.Response.Htmx(h => h.WithTrigger(ApiErrorTrigger, this));
-                    }
+            if (_httpContext.Request.IsHtmx())
+            {
+                if (this.Success == false)
+                {
+                    _httpContext.Response.Htmx(h => h.WithTrigger(ApiErrorTrigger, this));
                 }
             }
             return new JsonResult(this) { StatusCode = statusCode };
